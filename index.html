@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Planner">
+<meta name="theme-color" content="#2c2416">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<title>My Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --paper: #fffdf7;
+    --ink: #2c2416;
+    --ink-light: #7a6e5f;
+    --accent: #c8673a;
+    --accent-light: #f0d9ce;
+    --line: #e8e0d0;
+    --done: #9cbb8e;
+    --done-bg: #f2f8f0;
+    --shadow: rgba(44, 36, 22, 0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    padding: 48px 16px 80px;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(200, 103, 58, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(156, 187, 142, 0.08) 0%, transparent 50%);
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.2rem;
+    color: var(--ink);
+  }
+
+  header p {
+    font-size: 0.75rem;
+    color: var(--ink-light);
+    margin-top: 4px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .sync-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    margin-top: 6px;
+  }
+
+  .sync-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ccc;
+  }
+
+  .sync-dot.online { background: var(--done); }
+  .sync-dot.syncing { background: var(--accent); animation: pulse 1s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 720px;
+    margin: 0 auto 20px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar input[type="date"] {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.88rem;
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    padding: 8px 14px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .toolbar input[type="date"]:focus { border-color: var(--accent); }
+
+  .btn {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #b55a30; }
+
+  .filter-tabs {
+    display: flex;
+    gap: 6px;
+    max-width: 720px;
+    margin: 0 auto 20px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .tab {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.78rem;
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--line);
+    background: transparent;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+
+  .tab.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .date-section {
+    max-width: 720px;
+    margin: 0 auto 24px;
+    background: var(--paper);
+    border-radius: 16px;
+    box-shadow: 0 2px 16px var(--shadow);
+    overflow: hidden;
+    animation: fadeUp 0.3s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .date-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1.5px solid var(--line);
+    background: linear-gradient(135deg, var(--paper) 0%, rgba(240,217,206,0.3) 100%);
+  }
+
+  .date-main {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    color: var(--ink);
+  }
+
+  .date-day {
+    font-size: 0.75rem;
+    color: var(--ink-light);
+    margin-left: 8px;
+  }
+
+  .progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: var(--ink-light);
+  }
+
+  .progress-bar {
+    width: 70px;
+    height: 5px;
+    background: var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--done);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  .delete-date-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--ink-light);
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    margin-left: 8px;
+  }
+
+  .delete-date-btn:hover { color: #c0392b; background: #ffeaea; }
+
+  /* Table */
+  .task-table { width: 100%; border-collapse: collapse; }
+
+  .task-table thead tr { background: rgba(200,103,58,0.05); }
+
+  .task-table th {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    padding: 8px 14px;
+    text-align: left;
+    border-bottom: 1.5px solid var(--line);
+  }
+
+  .task-table th:nth-child(1) { width: 38px; text-align: center; }
+  .task-table th:nth-child(3) { width: 130px; }
+  .task-table th:nth-child(4) { width: 38px; text-align: center; }
+
+  .task-row { border-bottom: 1px solid var(--line); transition: background 0.2s; }
+  .task-row:last-child { border-bottom: none; }
+  .task-row:hover { background: rgba(200,103,58,0.03); }
+  .task-row.done { background: var(--done-bg); }
+
+  .task-row td { padding: 9px 14px; vertical-align: middle; }
+  .task-row td:nth-child(1) { text-align: center; }
+  .task-row td:nth-child(4) { text-align: center; }
+
+  .check-box {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--line);
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    background: var(--paper);
+  }
+
+  .check-box:hover { border-color: var(--done); }
+
+  .check-box.checked {
+    background: var(--done);
+    border-color: var(--done);
+  }
+
+  .check-box.checked::after {
+    content: '';
+    width: 10px;
+    height: 6px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) translateY(-1px);
+    display: block;
+  }
+
+  .task-text {
+    font-size: 0.88rem;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    font-family: 'Noto Sans KR', sans-serif;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  .task-text:hover { background: rgba(200,103,58,0.06); }
+  .task-text:focus { background: rgba(200,103,58,0.1); }
+  .task-text.done-text { text-decoration: line-through; color: var(--ink-light); }
+
+  .note-text {
+    font-size: 0.78rem;
+    color: var(--ink-light);
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    font-family: 'Noto Sans KR', sans-serif;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  .note-text:hover { background: rgba(200,103,58,0.06); }
+  .note-text:focus { background: rgba(200,103,58,0.1); }
+
+  .del-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #ccc;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.18s;
+  }
+
+  .del-btn:hover { color: #e74c3c; background: #ffeaea; }
+
+  .add-row td { padding: 8px 14px; }
+
+  .add-task-input {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.85rem;
+    background: transparent;
+    border: 1.5px dashed var(--line);
+    border-radius: 6px;
+    padding: 6px 10px;
+    width: 100%;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .add-task-input:focus { border-color: var(--accent); border-style: solid; }
+  .add-task-input::placeholder { color: #ccc; }
+
+  .add-btn-small {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    background: var(--accent-light);
+    color: var(--accent);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+
+  .add-btn-small:hover { background: var(--accent); color: #fff; }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--ink-light);
+  }
+
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.88rem; line-height: 1.8; }
+
+  .loading {
+    text-align: center;
+    padding: 48px;
+    color: var(--ink-light);
+    font-size: 0.88rem;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: #fff;
+    font-size: 0.82rem;
+    padding: 10px 20px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 999;
+    font-family: 'Noto Sans KR', sans-serif;
+    white-space: nowrap;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 600px) {
+    .task-table th:nth-child(3),
+    .task-row td:nth-child(3) { display: none; }
+    body { padding-top: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>My Planner</h1>
+  <p>날짜별 할 일 메모장</p>
+  <div class="sync-status">
+    <div class="sync-dot" id="syncDot"></div>
+    <span id="syncText">연결 중...</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <input type="date" id="datePicker">
+  <button class="btn btn-primary" onclick="addDateSection()">+ 날짜 추가</button>
+</div>
+
+<div class="filter-tabs">
+  <button class="tab active" onclick="filterTabs(this,'all')">전체</button>
+  <button class="tab" onclick="filterTabs(this,'today')">오늘</button>
+  <button class="tab" onclick="filterTabs(this,'undone')">미완료</button>
+</div>
+
+<div id="sections"><div class="loading">불러오는 중...</div></div>
+<div class="empty-state" id="emptyState" style="display:none">
+  <div class="icon">📋</div>
+  <p>날짜를 선택하고 <strong>날짜 추가</strong>를 눌러 시작하세요!</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SUPABASE_URL = 'https://uyjshvquiuredhxatzkx.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5anNodnF1aXVyZWRoeGF0emt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNTk2OTAsImV4cCI6MjA4OTczNTY5MH0.-4yfz0O5tbNOPwXXSzyaZJB4nybQWS4mCuzom97U8XQ';
+
+  const DAY_KO = ['일','월','화','수','목','금','토'];
+
+  let tasks = []; // [{id, date, text, done, note, created_at}]
+  let currentFilter = 'all';
+
+  document.getElementById('datePicker').value = today();
+
+  // ── API helpers ──
+  async function api(path, method='GET', body=null) {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+      method,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+      },
+      body: body ? JSON.stringify(body) : null
+    });
+    if (method === 'GET' || method === 'POST') return res.json();
+    return res.ok;
+  }
+
+  async function loadTasks() {
+    setSyncing();
+    try {
+      tasks = await api('tasks?order=created_at.asc');
+      setOnline();
+      render();
+    } catch(e) {
+      setSyncError();
+      toast('불러오기 실패. 인터넷을 확인해주세요.');
+    }
+  }
+
+  async function insertTask(task) {
+    setSyncing();
+    const result = await api('tasks', 'POST', task);
+    setOnline();
+    return result[0];
+  }
+
+  async function updateTaskDB(id, fields) {
+    setSyncing();
+    await api(`tasks?id=eq.${id}`, 'PATCH', fields);
+    setOnline();
+  }
+
+  async function deleteTaskDB(id) {
+    setSyncing();
+    await api(`tasks?id=eq.${id}`, 'DELETE');
+    setOnline();
+  }
+
+  async function deleteDateDB(date) {
+    setSyncing();
+    await api(`tasks?date=eq.${date}`, 'DELETE');
+    setOnline();
+  }
+
+  // ── Sync status ──
+  function setSyncing() {
+    document.getElementById('syncDot').className = 'sync-dot syncing';
+    document.getElementById('syncText').textContent = '동기화 중...';
+  }
+  function setOnline() {
+    document.getElementById('syncDot').className = 'sync-dot online';
+    document.getElementById('syncText').textContent = '동기화 완료';
+  }
+  function setSyncError() {
+    document.getElementById('syncDot').className = 'sync-dot';
+    document.getElementById('syncText').textContent = '오프라인';
+  }
+
+  // ── Utils ──
+  function today() { return new Date().toISOString().slice(0,10); }
+
+  function escHtml(s) {
+    return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function getDates() {
+    const all = [...new Set(tasks.map(t => t.date))].sort();
+    if (currentFilter === 'today') return all.filter(d => d === today());
+    if (currentFilter === 'undone') return all.filter(d => tasks.filter(t=>t.date===d).some(t=>!t.done));
+    return all;
+  }
+
+  // ── Render ──
+  function render() {
+    const container = document.getElementById('sections');
+    container.innerHTML = '';
+    const dates = getDates();
+    document.getElementById('emptyState').style.display = dates.length === 0 ? 'block' : 'none';
+
+    dates.forEach(date => {
+      const dateTasks = tasks.filter(t => t.date === date);
+      const done = dateTasks.filter(t => t.done).length;
+      const total = dateTasks.length;
+      const pct = total ? Math.round(done/total*100) : 0;
+      const d = new Date(date + 'T00:00:00');
+      const dayStr = DAY_KO[d.getDay()] + '요일';
+      const dateLabel = `${date.slice(5,7)}월 ${date.slice(8,10)}일`;
+
+      const sec = document.createElement('div');
+      sec.className = 'date-section';
+      sec.dataset.date = date;
+      sec.innerHTML = `
+        <div class="date-header">
+          <div>
+            <span class="date-main">${dateLabel}</span>
+            <span class="date-day">${d.getFullYear()}년 ${dayStr}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="progress">
+              <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+              <span>${done}/${total}</span>
+            </div>
+            <button class="delete-date-btn" onclick="deleteDate('${date}')">✕</button>
+          </div>
+        </div>
+        <table class="task-table">
+          <thead><tr>
+            <th>완료</th><th>할 일</th><th>비고</th><th></th>
+          </tr></thead>
+          <tbody id="tbody-${date}"></tbody>
+          <tfoot>
+            <tr class="add-row">
+              <td></td>
+              <td><input class="add-task-input" id="input-${date}" placeholder="새 할 일 입력 후 Enter..." onkeydown="if(event.key==='Enter')addTask('${date}')"></td>
+              <td></td>
+              <td><button class="add-btn-small" onclick="addTask('${date}')">추가</button></td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+      container.appendChild(sec);
+      renderTasks(date);
+    });
+  }
+
+  function renderTasks(date) {
+    const tbody = document.getElementById('tbody-' + date);
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    tasks.filter(t => t.date === date).forEach(task => {
+      const tr = document.createElement('tr');
+      tr.className = 'task-row' + (task.done ? ' done' : '');
+      tr.innerHTML = `
+        <td><div class="check-box ${task.done?'checked':''}" onclick="toggleDone('${task.id}')"></div></td>
+        <td><input class="task-text ${task.done?'done-text':''}" value="${escHtml(task.text)}"
+          onchange="updateTask('${task.id}','text',this.value)" placeholder="할 일"></td>
+        <td><input class="note-text" value="${escHtml(task.note||'')}"
+          onchange="updateTask('${task.id}','note',this.value)" placeholder="비고..."></td>
+        <td><button class="del-btn" onclick="deleteTask('${task.id}')">🗑</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateProgress(date) {
+    const dateTasks = tasks.filter(t => t.date === date);
+    const done = dateTasks.filter(t=>t.done).length;
+    const total = dateTasks.length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const sec = document.querySelector(`.date-section[data-date="${date}"]`);
+    if (!sec) return;
+    sec.querySelector('.progress-fill').style.width = pct + '%';
+    sec.querySelector('.progress span').textContent = `${done}/${total}`;
+  }
+
+  // ── Actions ──
+  async function addDateSection() {
+    const date = document.getElementById('datePicker').value;
+    if (!date) return toast('날짜를 선택해주세요');
+    if (tasks.some(t => t.date === date)) return toast('이미 추가된 날짜예요!');
+    // Add a placeholder so date section appears
+    const newTask = await insertTask({ date, text: '', done: false, note: '' });
+    tasks.push(newTask);
+    render();
+    setTimeout(() => {
+      const inp = document.getElementById('input-' + date);
+      if (inp) inp.focus();
+    }, 100);
+  }
+
+  async function deleteDate(date) {
+    if (!confirm(`${date} 날짜를 삭제할까요?`)) return;
+    await deleteDateDB(date);
+    tasks = tasks.filter(t => t.date !== date);
+    render();
+    toast('삭제됐어요');
+  }
+
+  async function addTask(date) {
+    const inp = document.getElementById('input-' + date);
+    const text = inp.value.trim();
+    if (!text) return;
+    const newTask = await insertTask({ date, text, done: false, note: '' });
+    // Remove empty placeholder if exists
+    const emptyIdx = tasks.findIndex(t => t.date === date && t.text === '');
+    if (emptyIdx > -1) {
+      await deleteTaskDB(tasks[emptyIdx].id);
+      tasks.splice(emptyIdx, 1);
+    }
+    tasks.push(newTask);
+    inp.value = '';
+    renderTasks(date);
+    updateProgress(date);
+  }
+
+  async function toggleDone(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    task.done = !task.done;
+    renderTasks(task.date);
+    updateProgress(task.date);
+    await updateTaskDB(id, { done: task.done });
+    if (task.done) toast('✅ 완료!');
+  }
+
+  async function updateTask(id, field, val) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    task[field] = val;
+    await updateTaskDB(id, { [field]: val });
+  }
+
+  async function deleteTask(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const date = task.date;
+    await deleteTaskDB(id);
+    tasks = tasks.filter(t => t.id !== id);
+    renderTasks(date);
+    updateProgress(date);
+  }
+
+  function filterTabs(btn, filter) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = filter;
+    render();
+  }
+
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2000);
+  }
+
+  // ── Init ──
+  loadTasks();
+
+  // Auto-refresh every 30 seconds
+  setInterval(loadTasks, 30000);
+</script>
+</body>
+</html>
