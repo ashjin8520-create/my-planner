@@ -674,29 +674,32 @@
   }
 
   async function toggleDone(id) {
-    const task = tasks.find(t => t.id === id);
+    id = String(id);
+    const task = tasks.find(t => String(t.id) === id);
     if (!task) return;
     const wasDone = task.done;
     task.done = !task.done;
-    await updateTaskDB(id, { done: task.done });
+    await updateTaskDB(task.id, { done: task.done });
     renderTasks(task.date);
     updateProgress(task.date);
     if (!wasDone) toast('✅ 완료!');
   }
 
   async function updateTask(id, field, val) {
-    const task = tasks.find(t => t.id === id);
+    id = String(id);
+    const task = tasks.find(t => String(t.id) === id);
     if (!task) return;
     task[field] = val;
-    await updateTaskDB(id, { [field]: val });
+    await updateTaskDB(task.id, { [field]: val });
   }
 
   async function deleteTask(id) {
-    const task = tasks.find(t => t.id === id);
+    id = String(id);
+    const task = tasks.find(t => String(t.id) === id);
     if (!task) return;
     const date = task.date;
-    await deleteTaskDB(id);
-    tasks = tasks.filter(t => t.id !== id);
+    await deleteTaskDB(task.id);
+    tasks = tasks.filter(t => String(t.id) !== id);
     renderTasks(date);
     updateProgress(date);
   }
