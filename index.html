@@ -676,11 +676,12 @@
   async function toggleDone(id) {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
+    const wasDone = task.done;
     task.done = !task.done;
+    await updateTaskDB(id, { done: task.done });
     renderTasks(task.date);
     updateProgress(task.date);
-    await updateTaskDB(id, { done: task.done });
-    if (task.done) toast('✅ 완료!');
+    if (!wasDone) toast('✅ 완료!');
   }
 
   async function updateTask(id, field, val) {
