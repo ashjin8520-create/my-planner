@@ -13,16 +13,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f5f0e8;
-    --paper: #fffdf7;
-    --ink: #2c2416;
-    --ink-light: #7a6e5f;
+    --bg: #111111;
+    --paper: #1e1e1e;
+    --ink: #e8e0d0;
+    --ink-light: #8a8070;
     --accent: #c8673a;
-    --accent-light: #f0d9ce;
-    --line: #e8e0d0;
-    --done: #9cbb8e;
-    --done-bg: #f2f8f0;
-    --shadow: rgba(44, 36, 22, 0.12);
+    --accent-light: #3a2218;
+    --line: #2e2e2e;
+    --done: #5a8a50;
+    --done-bg: #1a2a18;
+    --shadow: rgba(0, 0, 0, 0.4);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -234,8 +234,30 @@
   }
 
   .task-table th:nth-child(1) { width: 38px; text-align: center; }
-  .task-table th:nth-child(3) { width: 130px; }
-  .task-table th:nth-child(4) { width: 38px; text-align: center; }
+  .task-table th:nth-child(3) { width: 110px; }
+  .task-table th:nth-child(4) { width: 110px; }
+  .task-table th:nth-child(5) { width: 38px; text-align: center; }
+
+  .task-row td:nth-child(1) { text-align: center; }
+  .task-row td:nth-child(5) { text-align: center; }
+
+  .task-cell { display: flex; flex-direction: column; gap: 4px; }
+
+  .date-input {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.75rem;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 3px 7px;
+    color: var(--ink);
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+
+  .date-input:focus { border-color: var(--accent); }
+  .date-input::-webkit-calendar-picker-indicator { filter: invert(0.6); }
 
   .task-row { border-bottom: 1px solid var(--line); transition: background 0.2s; }
   .task-row:last-child { border-bottom: none; }
@@ -243,8 +265,6 @@
   .task-row.done { background: var(--done-bg); }
 
   .task-row td { padding: 9px 14px; vertical-align: middle; }
-  .task-row td:nth-child(1) { text-align: center; }
-  .task-row td:nth-child(4) { text-align: center; }
 
   .check-box {
     width: 20px;
@@ -556,13 +576,14 @@
         </div>
         <table class="task-table">
           <thead><tr>
-            <th>완료</th><th>할 일</th><th>비고</th><th></th>
+            <th>완료</th><th>할 일</th><th>완료 예상일</th><th>실제 완료일</th><th></th>
           </tr></thead>
           <tbody id="tbody-${date}"></tbody>
           <tfoot>
             <tr class="add-row">
               <td></td>
               <td><input class="add-task-input" id="input-${date}" placeholder="새 할 일 입력 후 Enter..." onkeydown="if(event.key==='Enter')addTask('${date}')"></td>
+              <td></td>
               <td></td>
               <td><button class="add-btn-small" onclick="addTask('${date}')">추가</button></td>
             </tr>
@@ -583,10 +604,18 @@
       tr.className = 'task-row' + (task.done ? ' done' : '');
       tr.innerHTML = `
         <td><div class="check-box ${task.done?'checked':''}" onclick="toggleDone('${task.id}')"></div></td>
-        <td><input class="task-text ${task.done?'done-text':''}" value="${escHtml(task.text)}"
-          onchange="updateTask('${task.id}','text',this.value)" placeholder="할 일"></td>
-        <td><input class="note-text" value="${escHtml(task.note||'')}"
-          onchange="updateTask('${task.id}','note',this.value)" placeholder="비고..."></td>
+        <td>
+          <div class="task-cell">
+            <input class="task-text ${task.done?'done-text':''}" value="${escHtml(task.text)}"
+              onchange="updateTask('${task.id}','text',this.value)" placeholder="할 일">
+            <input class="note-text" value="${escHtml(task.note||'')}"
+              onchange="updateTask('${task.id}','note',this.value)" placeholder="비고...">
+          </div>
+        </td>
+        <td><input type="date" class="date-input" value="${escHtml(task.due_date||'')}"
+          onchange="updateTask('${task.id}','due_date',this.value)"></td>
+        <td><input type="date" class="date-input" value="${escHtml(task.done_date||'')}"
+          onchange="updateTask('${task.id}','done_date',this.value)"></td>
         <td><button class="del-btn" onclick="deleteTask('${task.id}')">🗑</button></td>
       `;
       tbody.appendChild(tr);
@@ -631,7 +660,7 @@
     const inp = document.getElementById('input-' + date);
     const text = inp.value.trim();
     if (!text) return;
-    const newTask = await insertTask({ date, text, done: false, note: '' });
+    const newTask = await insertTask({ date, text, done: false, note: '', due_date: '', done_date: '' });
     // Remove empty placeholder if exists
     const emptyIdx = tasks.findIndex(t => t.date === date && t.text === '');
     if (emptyIdx > -1) {
